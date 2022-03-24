@@ -52,3 +52,26 @@ func (pigeon *PigeonCache) RemoveOldest() {
 	}
 }
 
+// Len how many element in this cache list
+
+func (pigeon *PigeonCache) Len() int {
+	return pigeon.list.Len()
+}
+
+func (pigeon *PigeonCache) Put(key string, value Value) {
+	element, ok := pigeon.cache[key]
+	if ok {
+		// element exist
+		pigeon.list.MoveToFront(element)
+		kv := element.Value.(*entity)
+		pigeon.usedMemory += int64(value.Len()) - int64(kv.value.Len())
+		kv.value = value
+	} else {
+		element := pigeon.list.PushBack(&entity{key: key, value: value})
+		pigeon.cache[key] = element
+		pigeon.usedMemory += int64(len(key)) + int64(value.Len())
+	}
+	for pigeon.maxMemory > 0 && pigeon.maxMemory < pigeon.usedMemory {
+		pigeon.RemoveOldest()
+	}
+}
