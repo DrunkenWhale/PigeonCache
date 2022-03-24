@@ -6,7 +6,7 @@ type PigeonCache struct {
 	maxMemory  int64
 	usedMemory int64
 	list       *list.List
-	cache      map[string]*list.Element // *list.Element is a point to a node in PigeonCache.list
+	Cache      map[string]*list.Element // *list.Element is a point to a node in PigeonCache.list
 	feedback   func(key string, value Value)
 }
 
@@ -19,18 +19,18 @@ type Value interface {
 	Len() int
 }
 
-func New(maxMemory int64, feedback func(string, Value)) *PigeonCache {
+func NewPigeonCache(maxMemory int64, feedback func(string, Value)) *PigeonCache {
 	return &PigeonCache{
 		maxMemory:  maxMemory,
 		usedMemory: 0,
 		list:       list.New(),
-		cache:      make(map[string]*list.Element),
+		Cache:      make(map[string]*list.Element),
 		feedback:   feedback,
 	}
 }
 
 func (pigeon *PigeonCache) Get(key string) (value Value, ok bool) {
-	element, ok := pigeon.cache[key]
+	element, ok := pigeon.Cache[key]
 	if ok {
 		pigeon.list.MoveToFront(element)
 		return element.Value.(*entity).value, true
@@ -44,7 +44,7 @@ func (pigeon *PigeonCache) RemoveOldest() {
 	if element != nil {
 		pigeon.list.Remove(element)
 		kv := element.Value.(*entity)
-		delete(pigeon.cache, kv.key)
+		delete(pigeon.Cache, kv.key)
 		pigeon.usedMemory -= int64(kv.value.Len()) + int64(len(kv.key))
 		if pigeon.feedback != nil {
 			pigeon.feedback(kv.key, kv.value)
@@ -52,14 +52,14 @@ func (pigeon *PigeonCache) RemoveOldest() {
 	}
 }
 
-// Len how many element in this cache list
+// Len how many element in this Cache list
 
 func (pigeon *PigeonCache) Len() int {
 	return pigeon.list.Len()
 }
 
 func (pigeon *PigeonCache) Put(key string, value Value) {
-	element, ok := pigeon.cache[key]
+	element, ok := pigeon.Cache[key]
 	if ok {
 		// element exist
 		pigeon.list.MoveToFront(element)
@@ -68,7 +68,7 @@ func (pigeon *PigeonCache) Put(key string, value Value) {
 		kv.value = value
 	} else {
 		element := pigeon.list.PushBack(&entity{key: key, value: value})
-		pigeon.cache[key] = element
+		pigeon.Cache[key] = element
 		pigeon.usedMemory += int64(len(key)) + int64(value.Len())
 	}
 	for pigeon.maxMemory > 0 && pigeon.maxMemory < pigeon.usedMemory {
