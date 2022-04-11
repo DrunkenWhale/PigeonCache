@@ -1,7 +1,7 @@
 package main
 
 import (
-	"PigeonCache/cache"
+	"PigeonCache/pigeoncache"
 	"fmt"
 )
 
@@ -13,7 +13,7 @@ func (d String) Len() int {
 
 
 func main() {
-	c := cache.NewPigeonCache(1024, nil)
+	c := pigeoncache.NewPigeonCache(1024, nil)
 	c.Put("114", String("114514"))
 	c.Put("1141", String("114514"))
 	c.Put("1142", String("114514"))

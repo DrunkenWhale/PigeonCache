@@ -1,4 +1,4 @@
-package cache
+package pigeoncache
 
 import "container/list"
 
@@ -19,7 +19,7 @@ type Value interface {
 	Len() int
 }
 
-func NewPigeonCache(maxMemory int64, feedback func(string, Value)) *PigeonCache {
+func (pigeon *PigeonCache) New(maxMemory int64, feedback func(string, Value)) *PigeonCache {
 	return &PigeonCache{
 		maxMemory:  maxMemory,
 		usedMemory: 0,
