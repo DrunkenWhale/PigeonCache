@@ -2,6 +2,7 @@ package main
 
 import (
 	"PigeonCache/cache"
+	"fmt"
 )
 
 type String string
@@ -26,5 +27,6 @@ func main() {
 	c.Put("1149", String("114514"))
 	c.Put("11465", String("114514"))
 	c.Put("11445", String("114514"))
+	fmt.Println(c.Get("1145"))
 
 }
