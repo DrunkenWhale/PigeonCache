@@ -4,6 +4,7 @@ import (
 	"PigeonCache/pigeoncache"
 	"fmt"
 	"log"
+	"net/http"
 )
 
 type String string
@@ -47,5 +48,9 @@ func TestGet() {
 			fmt.Println(value)
 		}
 	}
+	address := "localhost:9999"
+	peers := pigeoncache.NewHttpServer(address)
+	log.Println("pigeoncache")
+	log.Fatal(http.ListenAndServe(address, peers))
 
 }
