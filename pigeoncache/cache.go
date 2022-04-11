@@ -14,7 +14,7 @@ func (c *cache) add(key string, value ByteView) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.lru == nil {
-		c.lru = c.lru.New(c.cacheBytes, nil)
+		c.lru = New(c.cacheBytes, nil)
 	}
 	c.lru.Put(key, value)
 }

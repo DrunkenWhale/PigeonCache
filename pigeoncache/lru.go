@@ -19,7 +19,7 @@ type Value interface {
 	Len() int
 }
 
-func (pigeon *PigeonCache) New(maxMemory int64, feedback func(string, Value)) *PigeonCache {
+func New(maxMemory int64, feedback func(string, Value)) *PigeonCache {
 	return &PigeonCache{
 		maxMemory:  maxMemory,
 		usedMemory: 0,
