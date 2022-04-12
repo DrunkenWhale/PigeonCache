@@ -19,25 +19,58 @@ func main() {
 }
 
 func testBetaVersion() {
-	g := pigeoncache.NewGroup("pigeon", 2<<7, pigeoncache.GetterFunc(
-		func(key string) ([]byte, error) {
-			log.Println("[SlowDB] search key", key)
-			return nil, nil
-		}))
+
 	adds := []string{
 		"http://localhost:8001",
 		"http://localhost:8002",
 		"http://localhost:8003",
 	}
-
-	for _, add := range adds {
-		go startApiServer(add, g)
-	}
-	startCacheServer("http://localhost:7070", adds, g)
+	loadCounts := make(map[string]int)
+	g := pigeoncache.NewGroup("pigeon", 2<<7, pigeoncache.GetterFunc(
+		func(key string) ([]byte, error) {
+			log.Println("[SlowDB] search key", key)
+			if v, ok := db[key]; ok {
+				if _, ok := loadCounts[key]; !ok {
+					loadCounts[key] = 0
+				}
+				loadCounts[key] += 1
+				return []byte(v), nil
+			}
+			return nil, fmt.Errorf("%s not exist", key)
+		}))
+	go startApiServer("http://localhost:7070", g)
+	go startCacheServer(adds[0], adds, g)
+	g = pigeoncache.NewGroup("pigeon", 2<<7,pigeoncache.GetterFunc(
+		func(key string) ([]byte, error) {
+			log.Println("[SlowDB] search key", key)
+			if v, ok := db[key]; ok {
+				if _, ok := loadCounts[key]; !ok {
+					loadCounts[key] = 0
+				}
+				loadCounts[key] += 1
+				return []byte(v), nil
+			}
+			return nil, fmt.Errorf("%s not exist", key)
+		}))
+	go startCacheServer(adds[1], adds, g)
+	g = pigeoncache.NewGroup("pigeon", 2<<7,pigeoncache.GetterFunc(
+		func(key string) ([]byte, error) {
+			log.Println("[SlowDB] search key", key)
+			if v, ok := db[key]; ok {
+				if _, ok := loadCounts[key]; !ok {
+					loadCounts[key] = 0
+				}
+				loadCounts[key] += 1
+				return []byte(v), nil
+			}
+			return nil, fmt.Errorf("%s not exist", key)
+		}))
+	g.Get("Tom")
+	startCacheServer(adds[2], adds, g)
 }
 
 func startApiServer(apiAddr string, pigeon *pigeoncache.Group) {
-	http.Handle(apiAddr+"/api", http.HandlerFunc(
+	http.Handle("/api", http.HandlerFunc(
 		func(writer http.ResponseWriter, request *http.Request) {
 			key := request.URL.Query().Get("key")
 			view, err := pigeon.Get(key)
