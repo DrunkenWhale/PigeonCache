@@ -22,7 +22,7 @@ type HttpPool struct {
 const defaultBasePath = "/__pigeon_cache/"
 const defaultReplicas = 30
 
-func NewHttpServer(self string) *HttpPool {
+func NewHttpPool(self string) *HttpPool {
 	return &HttpPool{
 		self:     self,
 		bashPath: defaultBasePath,
