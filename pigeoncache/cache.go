@@ -1,12 +1,13 @@
 package pigeoncache
 
 import (
+	lru2 "PigeonCache/pigeoncache/lru"
 	"sync"
 )
 
 type cache struct {
 	mutex      sync.Mutex
-	lru        *PigeonCache
+	lru        *lru2.PigeonCache
 	cacheBytes int64
 }
 
@@ -14,7 +15,7 @@ func (c *cache) add(key string, value ByteView) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.lru == nil {
-		c.lru = New(c.cacheBytes, nil)
+		c.lru = lru2.New(c.cacheBytes, nil)
 	}
 	c.lru.Put(key, value)
 }

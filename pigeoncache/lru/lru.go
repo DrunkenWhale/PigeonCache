@@ -1,4 +1,4 @@
-package pigeoncache
+package lru
 
 import "container/list"
 
