@@ -1,31 +1,39 @@
 package pigeoncache
 
 import (
+	"PigeonCache/pigeoncache/consistenthash"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
+	"sync"
 )
 
-type HttpPath struct {
-	self     string
-	bashPath string
+type HttpPool struct {
+	self        string
+	bashPath    string
+	mutex       sync.Mutex
+	peers       *consistenthash.Map
+	httpGetters map[string]*httpGetter
 }
 
 const defaultBasePath = "/__pigeon_cache/"
+const defaultReplicas = 30
 
-func NewHttpServer(self string) *HttpPath {
-	return &HttpPath{
+func NewHttpServer(self string) *HttpPool {
+	return &HttpPool{
 		self:     self,
 		bashPath: defaultBasePath,
 	}
 }
 
-func (p *HttpPath) Log(format string, v ...interface{}) {
+func (p *HttpPool) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", p.self, fmt.Sprintf(format, v...))
 }
 
-func (p *HttpPath) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *HttpPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !strings.HasPrefix(r.URL.Path, p.bashPath) {
 		panic("Unexpected Path!")
 	}
@@ -59,3 +67,51 @@ func (p *HttpPath) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+type httpGetter struct {
+	baseURL string
+}
+
+func (h *httpGetter) Get(group string, key string) ([]byte, error) {
+	u := fmt.Sprintf("%v %v/%v", h.baseURL, url.QueryEscape(group), url.QueryEscape(key))
+	res, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("server return [%v]", res.StatusCode)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("can't read [%v]", err)
+	}
+	return bytes, nil
+}
+
+func (p *HttpPool) Set(peers ...string) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.peers = consistenthash.New(defaultReplicas, nil)
+	p.peers.Add(peers...)
+	p.httpGetters = make(map[string]*httpGetter, len(peers))
+	for _, peer := range peers {
+		p.httpGetters[peer] = &httpGetter{
+			baseURL: peer + p.bashPath,
+		}
+	}
+}
+
+func (p *HttpPool) PickPeer(key string) (PeerGetter, bool) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	if peer := p.peers.Get(key); peer != "" && peer != p.self {
+		p.Log("Pick peer %s", peer)
+		return p.httpGetters[peer], true
+	}
+	return nil, false
+}
+
+var _ PeerPicker = (*HttpPool)(nil)
