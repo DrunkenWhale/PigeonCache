@@ -2,6 +2,7 @@ package main
 
 import (
 	"PigeonCache/pigeoncache"
+	"PigeonCache/pigeoncache/consistenthash"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,8 +15,15 @@ func (d String) Len() int {
 }
 
 func main() {
-	TestGet()
+	TestConsistentHash()
+}
 
+func TestConsistentHash() {
+	hash := consistenthash.New(3, nil)
+	hash.Add("2", "4", "6")
+	fmt.Println( hash.Get("8"))
+	hash.Add("7")
+	fmt.Println( hash.Get("8"))
 }
 
 var db = map[string]string{
